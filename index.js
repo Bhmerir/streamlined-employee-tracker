@@ -51,6 +51,9 @@ function askQuestion() {
                 case "add an employee":
                     addAnEmployee();
                     break;
+                case "update an employee's role":
+                    updateEmployeeRole();
+                    break;
                 case "quit":
                     db.end();
             }
@@ -66,6 +69,7 @@ function showAllDepartments(){
     const queryTxt = 'SELECT * FROM department';
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
+            console.log("\n");
             console.table('department',rows);
             askQuestion();
         })
@@ -76,11 +80,12 @@ function showAllDepartments(){
 //------------------------------------------- Show all Roles -----------------------------------------------------------
 function showAllRoles(){
     const queryTxt = `SELECT role.id, role.title, department.name as department_name, role.salary
-                   FROM role
-                   INNER JOIN department 
-                   ON role.department_id = department.id`;
+                      FROM role
+                      INNER JOIN department 
+                      ON role.department_id = department.id`;
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
+            console.log("\n");
             console.table('role', rows);
             askQuestion();
         })
@@ -97,6 +102,7 @@ function showAllEmployees(){
                       lEFT JOIN employee AS manager ON employee.manager_id = manager.id`;
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
+            console.log("\n");
             console.table('employee', rows);
             askQuestion();
         })
@@ -230,7 +236,7 @@ function addAnEmployee(){
                     },
                     {
                         type: "list",
-                        message: "who is the employee's manager? ",
+                        message: "Who is the employee's manager? ",
                         name: "managerName",
                         choices: managerNameArr
                     }]
@@ -292,7 +298,81 @@ function addAnEmployee(){
         })
     
 }
+//------------------------------------------------ Update an employee's Role ----------------------------------------------------
+function updateEmployeeRole(){
+    let role, employee;
+    let roleTitleArr, employeeNameArr;
+    let employeeQuestion = [];
+    db.promise().query(`SELECT id, concat(first_name, ' ', last_name) AS employee_name FROM employee`)
+        .then(([employeeRows, employeeFields]) =>{
+            employee = employeeRows;
+            employeeNameArr = employee.map(item => item.employee_name);
+            db.promise().query(`SELECT * FROM role`)
+                .then(([roleRows, roleFields]) =>{
+                    role = roleRows;
+                    roleTitleArr = role.map(item => item.title);
+                    employeeQuestion = [{
+                        type: "list",
+                        message: "Which employee's role do you want to update? ",
+                        name: "employeeName",
+                        choices: employeeNameArr
+                    },
+                    {
+                        type: "list",
+                        message: "Which role do you want to assign the selected employee? ",
+                        name: "roleTitle",
+                        choices: roleTitleArr
+                    }]
 
+                    
+                    inquirer
+                    .prompt(employeeQuestion)
+                    .then((answer) => {
+                        if(answer === "quit"){
+                            askQuestion();
+                            return; 
+                        }
+
+                        let  {employeeName, roleTitle}= answer;
+                        let roleId, employeeId; 
+                        for(let i=0; i<role.length; i++){
+                            if (role[i].title == roleTitle){
+                                roleId = role[i].id;
+                            }
+                        };
+                        for(let i=0; i<employee.length; i++){
+                            if (employee[i].employee_name == employeeName){     
+                                employeeId = employee[i].id;
+                                
+                            }
+                        };
+                        queryTxt = `Update employee
+                                    SET role_id=?
+                                    WHERE id=?`;
+                        queryParameters = [roleId, employeeId];
+                        db.promise().query(queryTxt, queryParameters)
+                            .then(([rows, fields]) =>{
+                                console.log(`\n* The new role of "${roleTitle}" is assigned to "${employeeName}".\n`);
+                                askQuestion();
+                            })
+                            .catch(err=>{
+                                console.log(err);
+                            })
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        console.log("Sorry! Something went wrong!")
+                    })
+                })
+                .catch(err=>{
+                    console.log(err);
+                })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
+}
 
 
 //---------------------------------------------------------------------------------------------------------------------------------------
