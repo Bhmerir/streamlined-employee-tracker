@@ -28,6 +28,7 @@ function askQuestion() {
                 "add an employee",
                 "update an employee's role",
                 "view the total utilized budget for each department",
+                "view the total utilized budget of a specific department",
                 "quit",
             ]    
         })
@@ -57,6 +58,9 @@ function askQuestion() {
                     break;
                 case "view the total utilized budget for each department":
                     viewBugetPerDepartment();
+                    break; 
+                case "view the total utilized budget of a specific department":
+                    viewBudgetOfADepartment();
                     break;                   
                 case "quit":
                     db.end();
@@ -395,6 +399,63 @@ function viewBugetPerDepartment(){
         .catch(err=>{
             console.log(err);
         })
+}
+//--------------------------------- View the Budget of a Specific Department -----------------------------------
+function viewBudgetOfADepartment(){
+    let department;
+    let departmentNameArr;
+    let budgetQuestion = [];
+    db.promise().query(`SELECT * FROM department`)
+        .then(([rows, fields]) =>{
+            department = rows;
+            departmentNameArr = department.map(item => item.name);
+            budgetQuestion = [{
+                type: "list",
+                message: "Choose A Department: ",
+                name: "departmentName",
+                choices: departmentNameArr
+            }]
+            
+            inquirer
+            .prompt(budgetQuestion)
+            .then((answer) => {
+                if(answer === "quit"){
+                    askQuestion();
+                    return; 
+                }
+                let  {departmentName}= answer;
+                let departmentId 
+                for(let i=0; i<department.length; i++){
+                    if (department[i].name == departmentName){
+                        departmentId = department[i].id;
+                    }
+                };
+                const queryTxt = `SELECT budget_per_department.budget
+                                  FROM department,
+                                  (SELECT role.department_id , sum(role.salary) AS budget
+                                    FROM employee AS employee
+                                    INNER JOIN role ON employee.role_id = role.id
+                                    where role.department_id = ?) AS budget_per_department
+                                   where budget_per_department.department_id = department.id`;
+                db.promise().query(queryTxt, [departmentId])
+                    .then(([rows, fields]) =>{
+                        console.log("\n");
+                        console.table(`budget of ${departmentName} department`,rows);
+                        askQuestion();
+                    })
+                    .catch(err=>{
+                        console.log(err);
+                    })
+            })
+            .catch((error) => {
+                console.log(error);
+                console.log("Sorry! Something went wrong!")
+            })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
 }
 
 
