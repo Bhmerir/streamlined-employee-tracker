@@ -11,8 +11,9 @@ const db = mySql.createConnection({
 console.log(`Connected to the employees_db database.`)
 );
     
-  
-function askQuestion() {      
+//------------------------------------------- Ask Intial Questions ----------------------------------------------------------- 
+function askQuestion() {   
+    console.log("\n--------------------------------------------")   
     inquirer
         .prompt({
             type: "list",
@@ -44,6 +45,12 @@ function askQuestion() {
                 case "add a department":
                     addADepartment();
                     break;
+                case "add a role":
+                    addARole();
+                    break;
+                case "add an employee":
+                    addAnEmployee();
+                    break;
                 case "quit":
                     db.end();
             }
@@ -54,7 +61,7 @@ function askQuestion() {
             console.log("Sorry! Something went wrong!")
         })
 }
-
+//------------------------------------------- Show all Departments -----------------------------------------------------------
 function showAllDepartments(){
     const queryTxt = 'SELECT * FROM department';
     db.promise().query(queryTxt)
@@ -66,7 +73,7 @@ function showAllDepartments(){
             console.log(err);
         })
 }
-
+//------------------------------------------- Show all Roles -----------------------------------------------------------
 function showAllRoles(){
     const queryTxt = `SELECT role.id, role.title, department.name as department_name, role.salary
                    FROM role
@@ -81,13 +88,13 @@ function showAllRoles(){
             console.log(err);
         })
 }
-
+//------------------------------------------- Show all Employees -----------------------------------------------------------
 function showAllEmployees(){
     const queryTxt = `SELECT employee.first_name, employee.last_name, role.title, 
                       concat(manager.first_name, ' ', manager.last_name) AS manager_name
                       FROM employee AS employee
                       INNER JOIN role ON employee.role_id = role.id
-                      lEFT JOIN employee AS manager ON employee.id = manager.id`;
+                      lEFT JOIN employee AS manager ON employee.manager_id = manager.id`;
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
             console.table('employee', rows);
@@ -116,7 +123,7 @@ function addADepartment(){
                               VALUES (?)`;
             db.promise().query(queryTxt, [departmentName])
                 .then(([rows, fields]) =>{
-                    console.log(`New department of ${departmentName} is added.`)
+                    console.log(`\n* New department of "${departmentName}" is added.`)
                     askQuestion();
                 })
                 .catch(err=>{
@@ -130,7 +137,163 @@ function addADepartment(){
 }
 
 //------------------------------------------------ Add a Role ----------------------------------------------------
+function addARole(){
+    let department;
+    let departmentNameArr;
+    let roleQuestion = [];
+    db.promise().query(`SELECT * FROM department`)
+        .then(([rows, fields]) =>{
+            department = rows;
+            departmentNameArr = department.map(item => item.name);
+            roleQuestion = [{
+                type: "input",
+                message: "What is the name of the role? (write quit if you have given up) ",
+                name: "title",
+            },
+            {
+                type: "input",
+                message: "What is the salary of the role? (write quit if you have given up) ",
+                name: "salary",
+            },
+            {
+                type: "list",
+                message: "Which department does the role belong to? ",
+                name: "departmentName",
+                choices: departmentNameArr
+            }]
+            
+            inquirer
+            .prompt(roleQuestion)
+            .then((answer) => {
+                if(answer === "quit"){
+                    askQuestion();
+                    return; 
+                }
+                let  {title, salary, departmentName}= answer;
+                let departmentId 
+                for(let i=0; i<department.length; i++){
+                    if (department[i].name == departmentName){
+                        departmentId = department[i].id;
+                    }
+                };
+                const queryTxt = `INSERT INTO role(title, salary, department_id)
+                                  VALUES (?, ?, ?)`;
+                db.promise().query(queryTxt, [title, salary, departmentId])
+                    .then(([rows, fields]) =>{
+                        console.log(`\n* New role of "${title}" is added.`)
+                        askQuestion();
+                    })
+                    .catch(err=>{
+                        console.log(err);
+                    })
+            })
+            .catch((error) => {
+                console.log(error);
+                console.log("Sorry! Something went wrong!")
+            })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
+}
+
+//------------------------------------------------ Add an Employee ----------------------------------------------------
+function addAnEmployee(){
+    let role, manager;
+    let roleTitleArr, managerNameArr;
+    let employeeQuestion = [];
+    db.promise().query(`SELECT * FROM role`)
+        .then(([roleRows, roleFields]) =>{
+            role = roleRows;
+            roleTitleArr = role.map(item => item.title);
+            db.promise().query(`SELECT id, concat(first_name, ' ', last_name) AS manager_name FROM employee`)
+                .then(([managerRows, managerFields]) =>{
+                    manager = managerRows;
+                    managerNameArr = manager.map(item => item.manager_name);
+                    managerNameArr.push("No Manager")
+                    employeeQuestion = [{
+                        type: "input",
+                        message: "What is the employee's first name? (write quit if you have given up) ",
+                        name: "firstName",
+                    },
+                    {
+                        type: "input",
+                        message: "What is the employee's last name? (write quit if you have given up) ",
+                        name: "lastName",
+                    },
+                    {
+                        type: "list",
+                        message: "Which is the employee's role? ",
+                        name: "roleTitle",
+                        choices: roleTitleArr
+                    },
+                    {
+                        type: "list",
+                        message: "who is the employee's manager? ",
+                        name: "managerName",
+                        choices: managerNameArr
+                    }]
+
+                    
+                    inquirer
+                    .prompt(employeeQuestion)
+                    .then((answer) => {
+                        if(answer === "quit"){
+                            askQuestion();
+                            return; 
+                        }
+
+                        let  {firstName, lastName, roleTitle, managerName}= answer;
+                        let roleId, managerId; 
+                        for(let i=0; i<role.length; i++){
+                            if (role[i].title == roleTitle){
+                                roleId = role[i].id;
+                            }
+                        };
+                        let queryTxt;
+                        let queryParameters;
+                        if(managerName !== "No Manager"){
+                            for(let i=0; i<manager.length; i++){
+                                if (manager[i].manager_name == managerName){     
+                                    managerId = manager[i].id;
+                                    
+                                }
+                            };
+                            queryTxt = `INSERT INTO employee(first_name, last_name, role_id, manager_id)
+                                        VALUES (?, ?, ?, ?)`;
+                            queryParameters = [firstName, lastName, roleId, managerId];
+                        }
+                        else{
+                            queryTxt = `INSERT INTO employee(first_name, last_name, role_id)
+                                        VALUES (?, ?, ?)`;
+                            queryParameters = [firstName, lastName, roleId];
+                        }
+                        db.promise().query(queryTxt, queryParameters)
+                            .then(([rows, fields]) =>{
+                                console.log(`\n* New employee of "${firstName} ${lastName}" is added.`)
+                                askQuestion();
+                            })
+                            .catch(err=>{
+                                console.log(err);
+                            })
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                        console.log("Sorry! Something went wrong!")
+                    })
+                })
+                .catch(err=>{
+                    console.log(err);
+                })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
+}
 
 
 
+//---------------------------------------------------------------------------------------------------------------------------------------
 askQuestion();
