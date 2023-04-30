@@ -27,6 +27,7 @@ function askQuestion() {
                 "add a role",
                 "add an employee",
                 "update an employee's role",
+                "view the total utilized budget for each department",
                 "quit",
             ]    
         })
@@ -54,6 +55,9 @@ function askQuestion() {
                 case "update an employee's role":
                     updateEmployeeRole();
                     break;
+                case "view the total utilized budget for each department":
+                    viewBugetPerDepartment();
+                    break;                   
                 case "quit":
                     db.end();
             }
@@ -372,6 +376,25 @@ function updateEmployeeRole(){
             console.log(err);
         })
     
+}
+//------------------------------------------- view budget per department -----------------------------------------------------------
+function viewBugetPerDepartment(){
+    const queryTxt = `SELECT department.name AS department_name, budget_per_department.budget
+                      FROM department,
+                      (SELECT role.department_id , sum(role.salary) AS budget
+                        FROM employee AS employee
+                        INNER JOIN role ON employee.role_id = role.id
+                        group by department_id) AS budget_per_department
+                      where budget_per_department.department_id = department.id`;
+    db.promise().query(queryTxt)
+        .then(([rows, fields]) =>{
+            console.log("\n");
+            console.table('budget of each department',rows);
+            askQuestion();
+        })
+        .catch(err=>{
+            console.log(err);
+        })
 }
 
 
