@@ -126,12 +126,22 @@ function showAllEmployees(){
             console.log(err);
         })
 }
+// ----------------------------------------------- validate ------------------------------------------------------------
+//This function checks if user has entered ehe data or not
+function validateInput(input){
+    if(input.length === 0){
+        console.log("No data is entered!");
+        return false;
+    }
+    return true;
+}
 //------------------------------------------------ Add a Department ----------------------------------------------------
 function addADepartment(){
     const departmentQuestion = [{
         type: "input",
         message: "What is the name of new department? ",
         name: "departmentName",
+        validate: validateInput
     }]
     inquirer
         .prompt(departmentQuestion)
@@ -167,11 +177,13 @@ function addARole(){
                 type: "input",
                 message: "What is the name of the role? ",
                 name: "title",
+                validate: validateInput
             },
             {
                 type: "input",
                 message: "What is the salary of the role? ",
                 name: "salary",
+                validate: validateInput
             },
             {
                 type: "list",
@@ -230,11 +242,13 @@ function addAnEmployee(){
                         type: "input",
                         message: "What is the employee's first name? ",
                         name: "firstName",
+                        validate: validateInput
                     },
                     {
                         type: "input",
                         message: "What is the employee's last name? ",
                         name: "lastName",
+                        validate: validateInput
                     },
                     {
                         type: "list",
