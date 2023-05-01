@@ -26,6 +26,7 @@ function askQuestion() {
                 "update an employee's role",
                 "update an employee's manager",
                 "delete an employee",
+                "delete a role",
                 "view all departments",
                 "view all roles",
                 "view all employees",
@@ -64,6 +65,9 @@ function askQuestion() {
                 case "delete an employee":
                     deleteAnEmployee();
                     break;
+                case "delete a role":
+                    deleteARole();
+                    break;
                 case "view the total utilized budget for each department":
                     viewBugetPerDepartment();
                     break; 
@@ -97,7 +101,7 @@ function showAllDepartments(){
 function showAllRoles(){
     const queryTxt = `SELECT role.id, role.title, department.name as department_name, role.salary
                       FROM role
-                      INNER JOIN department 
+                      LEFT JOIN department 
                       ON role.department_id = department.id`;
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
@@ -114,7 +118,7 @@ function showAllEmployees(){
     const queryTxt = `SELECT employee.id, employee.first_name, employee.last_name, role.title, 
                       concat(manager.first_name, ' ', manager.last_name) AS manager_name
                       FROM employee AS employee
-                      INNER JOIN role ON employee.role_id = role.id
+                      LEFT JOIN role ON employee.role_id = role.id
                       lEFT JOIN employee AS manager ON employee.manager_id = manager.id`;
     db.promise().query(queryTxt)
         .then(([rows, fields]) =>{
@@ -175,7 +179,7 @@ function addARole(){
             departmentNameArr = department.map(item => item.name);
             roleQuestion = [{
                 type: "input",
-                message: "What is the name of the role? ",
+                message: "What is the title of the role? ",
                 name: "title",
                 validate: validateInput
             },
@@ -580,8 +584,52 @@ function deleteAnEmployee(){
                     };
                     db.promise().query(`DELETE FROM employee where id = ?`, [employeeId])
                         .then(([rows, fields]) =>{
-                            console.log(`\n* "${employeeName}" is deleted from the list of employees.`);
+                            console.log(`\n* "${employeeName}" is deleted from the list of the employees.`);
                             showAllEmployees();
+                        })
+                        .catch(err=>{
+                            console.log(err);
+                        })
+                    })    
+                    .catch((error) => {
+                        console.log(error);
+                        console.log("Sorry! Something went wrong!")
+                    })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+}
+//------------------------------------------------ Delete a Role --------------------------------------------------------
+function deleteARole(){
+    let role;
+    let roleTitleArr;
+    let roleQuestion = [];
+    db.promise().query(`SELECT id, title FROM role`)
+        .then(([roleRows, roleFields]) =>{
+            role = roleRows;
+            roleTitleArr = role.map(item => item.title);
+            roleQuestion = [{
+                type: "list",
+                message: "Which role do you want to delete? (WARNING! If some employees have the chosen role, a new role should be assigned to them.) ",
+                name: "roleTitle",
+                choices: roleTitleArr
+            }]
+            inquirer
+                .prompt(roleQuestion)
+                .then((answer) => {
+                    let  {roleTitle}= answer;
+                    let roleId; 
+                    for(let i=0; i<role.length; i++){
+                        if (role[i].title == roleTitle){     
+                            roleId = role[i].id;
+                            
+                        }
+                    };
+                    db.promise().query(`DELETE FROM role where id = ?`, [roleId])
+                        .then(([rows, fields]) =>{
+                            console.log(`\n* "${roleTitle}" is deleted from the list of the rols.`);
+                            showAllRoles();
                         })
                         .catch(err=>{
                             console.log(err);
