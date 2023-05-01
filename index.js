@@ -3,12 +3,12 @@ const mySql = require("mysql2");
 const cTable = require("console.table");
 
 const db = mySql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'password',
-    database: 'employees_db'
-},
-console.log(`Connected to the employees_db database.`)
+        host: 'localhost',
+        user: 'root',
+        password: 'password',
+        database: 'employees_db'
+    },
+    console.log(`Connected to the employees_db database.`)
 );
     
 //------------------------------------------- Ask Intial Questions ----------------------------------------------------------- 
@@ -17,7 +17,7 @@ function askQuestion() {
     inquirer
         .prompt({
             type: "list",
-            message: "What would you like to do? ",
+            message: "What would you like to do? (select 'quit' to stop the application) ",
             name: "selectedQuery",
             choices: [
                 "view all departments",
@@ -27,6 +27,7 @@ function askQuestion() {
                 "add a role",
                 "add an employee",
                 "update an employee's role",
+                "update an employee's manager",
                 "view the total utilized budget for each department",
                 "view the total utilized budget of a specific department",
                 "quit",
@@ -55,6 +56,9 @@ function askQuestion() {
                     break;
                 case "update an employee's role":
                     updateEmployeeRole();
+                    break;
+                case "update an employee's manager":
+                    updateEmployeeManager();
                     break;
                 case "view the total utilized budget for each department":
                     viewBugetPerDepartment();
@@ -103,7 +107,7 @@ function showAllRoles(){
 }
 //------------------------------------------- Show all Employees -----------------------------------------------------------
 function showAllEmployees(){
-    const queryTxt = `SELECT employee.first_name, employee.last_name, role.title, 
+    const queryTxt = `SELECT employee.id, employee.first_name, employee.last_name, role.title, 
                       concat(manager.first_name, ' ', manager.last_name) AS manager_name
                       FROM employee AS employee
                       INNER JOIN role ON employee.role_id = role.id
@@ -122,22 +126,18 @@ function showAllEmployees(){
 function addADepartment(){
     const departmentQuestion = [{
         type: "input",
-        message: "What is the name of new department? (write quit if you have given up) ",
+        message: "What is the name of new department? ",
         name: "departmentName",
     }]
     inquirer
         .prompt(departmentQuestion)
         .then((answer) => {
-            if(answer === "quit"){
-                askQuestion();
-                return; 
-            }
             let  {departmentName}= answer;
             const queryTxt = `INSERT INTO department(name)
                               VALUES (?)`;
             db.promise().query(queryTxt, [departmentName])
                 .then(([rows, fields]) =>{
-                    console.log(`\n* New department of "${departmentName}" is added.`)
+                    console.log(`\n* New department of "${departmentName}" is added.`);
                     askQuestion();
                 })
                 .catch(err=>{
@@ -146,7 +146,7 @@ function addADepartment(){
         })
         .catch((error) => {
             console.log(error);
-            console.log("Sorry! Something went wrong!")
+            console.log("Sorry! Something went wrong!");
         })
 }
 
@@ -161,12 +161,12 @@ function addARole(){
             departmentNameArr = department.map(item => item.name);
             roleQuestion = [{
                 type: "input",
-                message: "What is the name of the role? (write quit if you have given up) ",
+                message: "What is the name of the role? ",
                 name: "title",
             },
             {
                 type: "input",
-                message: "What is the salary of the role? (write quit if you have given up) ",
+                message: "What is the salary of the role? ",
                 name: "salary",
             },
             {
@@ -179,10 +179,6 @@ function addARole(){
             inquirer
             .prompt(roleQuestion)
             .then((answer) => {
-                if(answer === "quit"){
-                    askQuestion();
-                    return; 
-                }
                 let  {title, salary, departmentName}= answer;
                 let departmentId 
                 for(let i=0; i<department.length; i++){
@@ -194,7 +190,7 @@ function addARole(){
                                   VALUES (?, ?, ?)`;
                 db.promise().query(queryTxt, [title, salary, departmentId])
                     .then(([rows, fields]) =>{
-                        console.log(`\n* New role of "${title}" is added.`)
+                        console.log(`\n* New role of "${title}" is added.`);
                         askQuestion();
                     })
                     .catch(err=>{
@@ -225,15 +221,15 @@ function addAnEmployee(){
                 .then(([managerRows, managerFields]) =>{
                     manager = managerRows;
                     managerNameArr = manager.map(item => item.manager_name);
-                    managerNameArr.push("No Manager")
+                    managerNameArr.push("NO MANAGER")
                     employeeQuestion = [{
                         type: "input",
-                        message: "What is the employee's first name? (write quit if you have given up) ",
+                        message: "What is the employee's first name? ",
                         name: "firstName",
                     },
                     {
                         type: "input",
-                        message: "What is the employee's last name? (write quit if you have given up) ",
+                        message: "What is the employee's last name? ",
                         name: "lastName",
                     },
                     {
@@ -253,11 +249,6 @@ function addAnEmployee(){
                     inquirer
                     .prompt(employeeQuestion)
                     .then((answer) => {
-                        if(answer === "quit"){
-                            askQuestion();
-                            return; 
-                        }
-
                         let  {firstName, lastName, roleTitle, managerName}= answer;
                         let roleId, managerId; 
                         for(let i=0; i<role.length; i++){
@@ -267,7 +258,7 @@ function addAnEmployee(){
                         };
                         let queryTxt;
                         let queryParameters;
-                        if(managerName !== "No Manager"){
+                        if(managerName !== "NO MANAGER"){
                             for(let i=0; i<manager.length; i++){
                                 if (manager[i].manager_name == managerName){     
                                     managerId = manager[i].id;
@@ -285,7 +276,7 @@ function addAnEmployee(){
                         }
                         db.promise().query(queryTxt, queryParameters)
                             .then(([rows, fields]) =>{
-                                console.log(`\n* New employee of "${firstName} ${lastName}" is added.`)
+                                console.log(`\n* New employee of "${firstName} ${lastName}" is added.`);
                                 askQuestion();
                             })
                             .catch(err=>{
@@ -336,11 +327,6 @@ function updateEmployeeRole(){
                     inquirer
                     .prompt(employeeQuestion)
                     .then((answer) => {
-                        if(answer === "quit"){
-                            askQuestion();
-                            return; 
-                        }
-
                         let  {employeeName, roleTitle}= answer;
                         let roleId, employeeId; 
                         for(let i=0; i<role.length; i++){
@@ -402,7 +388,7 @@ function viewBugetPerDepartment(){
 }
 //--------------------------------- View the Budget of a Specific Department -----------------------------------
 function viewBudgetOfADepartment(){
-    let department;
+    let manager;
     let departmentNameArr;
     let budgetQuestion = [];
     db.promise().query(`SELECT * FROM department`)
@@ -419,10 +405,6 @@ function viewBudgetOfADepartment(){
             inquirer
             .prompt(budgetQuestion)
             .then((answer) => {
-                if(answer === "quit"){
-                    askQuestion();
-                    return; 
-                }
                 let  {departmentName}= answer;
                 let departmentId 
                 for(let i=0; i<department.length; i++){
@@ -457,7 +439,121 @@ function viewBudgetOfADepartment(){
         })
     
 }
+//------------------------------------------------ Update an Employee's Manager ----------------------------------------------------
+function updateEmployeeManager(){
+    let manager, employee;
+    let managerNameArr, employeeNameArr;
+    let managerQuestion = [], employeeQuestion = [];
+    db.promise().query(`SELECT id, concat(first_name, ' ', last_name) AS employee_name FROM employee`)
+        .then(([employeeRows, employeeFields]) =>{
+            employee = employeeRows;
+            employeeNameArr = employee.map(item => item.employee_name);
+            employeeQuestion = [{
+                type: "list",
+                message: "Which employee's manager do you want to update? ",
+                name: "employeeName",
+                choices: employeeNameArr
+            }]
+            inquirer
+                .prompt(employeeQuestion)
+                .then((answer) => {
+                    let  {employeeName}= answer;
+                    let employeeId; 
+                    for(let i=0; i<employee.length; i++){
+                        if (employee[i].employee_name == employeeName){     
+                            employeeId = employee[i].id;
+                            
+                        }
+                    };
+                    //The selected employee above should be filtered from the list of managers
+                    db.promise().query(`SELECT id, concat(first_name, ' ', last_name) AS manager_name FROM employee where id <> ?`, [employeeId])
+                        .then(([managerRows, managerFields]) =>{
+                            manager = managerRows;
+                            managerNameArr = manager.map(item => item.manager_name);
+                            /*This option is added because an employee could be the a top managerial post of the company.
+                            In this case we set null as the id of manager*/
+                            managerNameArr.push("NO MANAGER")
+                            managerQuestion = [{
+                                type: "list",
+                                message: "Select the new manager: ",
+                                name: "managerName",
+                                choices: managerNameArr
+                            }]
+                            inquirer
+                                .prompt(managerQuestion)
+                                .then((answer) => {
+                                        let {managerName}= answer;
+                                    let managerId; 
+                                    if(managerName !== "NO MANAGER"){
+                                        for(let i=0; i<manager.length; i++){
+                                            if (manager[i].manager_name == managerName){
+                                                managerId = manager[i].id;
+                                            }
+                                        };
+                                        queryTxt = `Update employee
+                                                    SET manager_id=?
+                                                    WHERE id=?`;
+                                        queryParameters = [managerId, employeeId];
+                                    }
+                                    else{
+                                        queryTxt = `Update employee
+                                                    SET manager_id=NULL
+                                                    WHERE id=?`;
+                                        queryParameters = [employeeId];
+                                    }
+                                    db.promise().query(queryTxt, queryParameters)
+                                        .then(([rows, fields]) =>{
+                                            if(managerName !== "NO MANAGER"){
+                                                console.log(`\n* Since now, the manager of "${employeeName}" is "${managerName}".\n`);
+                                            }
+                                            else{
+                                                console.log(`\n* Since now, "${employeeName}" has no manager.\n`);
+                                            }
 
+                                            askQuestion();
+                                        })
+                                        .catch(err=>{
+                                            console.log(err);
+                                        })
+                                })
+                                .catch((error) => {
+                                    console.log(error);
+                                    console.log("Sorry! Something went wrong!")
+                                })
+                        })
+                        .catch(err=>{
+                            console.log(err);
+                        })
+        
+                })    
+                .catch((error) => {
+                    console.log(error);
+                    console.log("Sorry! Something went wrong!")
+                })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+}
 
 //---------------------------------------------------------------------------------------------------------------------------------------
-askQuestion();
+
+function init(){
+    console.log(`
+ _____________________________________________________________________________________________________________
+|                                                                                                             |
+|   ______                    _                               _______                _                        |            
+|  |  ____|                  | |                             |__   __|              | |                       |
+|  | |__    ____ ____  _ __  | |  ___   _   _   ___   ___       | | _ __  __ _  ___ | | _   ___   _ __        |
+|  |  __|  |  _ ' _  || '_ \\ | | / _ \\ | | | | / _ \\ / _ \\      | || '__// _  |/ __ | |/ / / _ \\ | '__|       |
+|  | |____ | | | | | || |_) || || (_) || |_| ||  __/|  __/      | || |  | (_| |(___ |   < |  __/ | |          |
+|  |______||_| |_| |_|| .__/ |_| \\___/  \\__, | \\___| \\___|      |_||_|   \\__,_|\\___ |_|\\_\\ \\___| |_|          | 
+|                     | |                __/ |                                                                |
+|                     |_|               |___/                                                                 |
+|                                                                                                             |
+|_____________________________________________________________________________________________________________|                                 
+    `);
+    console.log("\nWELCOME TO EMPLOYEE TRACKER APPLICATION!")
+    askQuestion();
+}
+init();
