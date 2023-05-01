@@ -21,15 +21,17 @@ The user by applying the program, can do the following:
 
 5. update the manager of an employee (If the employee is the top managerial post of the company, the option of `'NO MANAGER'` can be chosen.)
 
-6. view all departments
+6. delete an employee
 
-7. view all roles and the department to which each one of them belongs
+7. view all departments
 
-8. view all employees, their role titles, and their managers
+8. view all roles and the department to which each one of them belongs
 
-9. view the total utilized budget for each department
+9. view all employees, their role titles, and their managers
 
-10. view the total utilized budget of a specific department
+10. view the total utilized budget for each department
+
+11. view the total utilized budget of a specific department
 
 <br>
 

@@ -20,14 +20,15 @@ function askQuestion() {
             message: "What would you like to do? (select 'quit' to stop the application) ",
             name: "selectedQuery",
             choices: [
-                "view all departments",
-                "view all roles",
-                "view all employees",
                 "add a department",
                 "add a role",
                 "add an employee",
                 "update an employee's role",
                 "update an employee's manager",
+                "delete an employee",
+                "view all departments",
+                "view all roles",
+                "view all employees",
                 "view the total utilized budget for each department",
                 "view the total utilized budget of a specific department",
                 "quit",
@@ -59,6 +60,9 @@ function askQuestion() {
                     break;
                 case "update an employee's manager":
                     updateEmployeeManager();
+                    break;
+                case "delete an employee":
+                    deleteAnEmployee();
                     break;
                 case "view the total utilized budget for each department":
                     viewBugetPerDepartment();
@@ -138,7 +142,7 @@ function addADepartment(){
             db.promise().query(queryTxt, [departmentName])
                 .then(([rows, fields]) =>{
                     console.log(`\n* New department of "${departmentName}" is added.`);
-                    askQuestion();
+                    showAllDepartments();
                 })
                 .catch(err=>{
                     console.log(err);
@@ -191,7 +195,7 @@ function addARole(){
                 db.promise().query(queryTxt, [title, salary, departmentId])
                     .then(([rows, fields]) =>{
                         console.log(`\n* New role of "${title}" is added.`);
-                        askQuestion();
+                        showAllRoles();
                     })
                     .catch(err=>{
                         console.log(err);
@@ -277,7 +281,7 @@ function addAnEmployee(){
                         db.promise().query(queryTxt, queryParameters)
                             .then(([rows, fields]) =>{
                                 console.log(`\n* New employee of "${firstName} ${lastName}" is added.`);
-                                askQuestion();
+                                showAllEmployees();
                             })
                             .catch(err=>{
                                 console.log(err);
@@ -347,7 +351,7 @@ function updateEmployeeRole(){
                         db.promise().query(queryTxt, queryParameters)
                             .then(([rows, fields]) =>{
                                 console.log(`\n* The new role of "${roleTitle}" is assigned to "${employeeName}".\n`);
-                                askQuestion();
+                                showAllEmployees();
                             })
                             .catch(err=>{
                                 console.log(err);
@@ -509,8 +513,7 @@ function updateEmployeeManager(){
                                             else{
                                                 console.log(`\n* Since now, "${employeeName}" has no manager.\n`);
                                             }
-
-                                            askQuestion();
+                                            showAllEmployees();
                                         })
                                         .catch(err=>{
                                             console.log(err);
@@ -535,8 +538,53 @@ function updateEmployeeManager(){
             console.log(err);
         })
 }
+//------------------------------------------------ Delete an Employee --------------------------------------------------------
+function deleteAnEmployee(){
+    let employee;
+    let employeeNameArr;
+    let employeeQuestion = [];
+    db.promise().query(`SELECT id, concat(first_name, ' ', last_name) AS employee_name FROM employee`)
+        .then(([employeeRows, employeeFields]) =>{
+            employee = employeeRows;
+            employeeNameArr = employee.map(item => item.employee_name);
+            employeeQuestion = [{
+                type: "list",
+                message: "Which employee do you want to delete? (WARNING! If the chosen employee is a manager, another manager should be chosen for their employees.) ",
+                name: "employeeName",
+                choices: employeeNameArr
+            }]
+            inquirer
+                .prompt(employeeQuestion)
+                .then((answer) => {
+                    let  {employeeName}= answer;
+                    let employeeId; 
+                    for(let i=0; i<employee.length; i++){
+                        if (employee[i].employee_name == employeeName){     
+                            employeeId = employee[i].id;
+                            
+                        }
+                    };
+                    db.promise().query(`DELETE FROM employee where id = ?`, [employeeId])
+                        .then(([rows, fields]) =>{
+                            console.log(`\n* "${employeeName}" is deleted from the list of employees.`);
+                            showAllEmployees();
+                        })
+                        .catch(err=>{
+                            console.log(err);
+                        })
+                    })    
+                    .catch((error) => {
+                        console.log(error);
+                        console.log("Sorry! Something went wrong!")
+                    })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+}
 
-//---------------------------------------------------------------------------------------------------------------------------------------
+
+//-------------------------------------------------------- Init --------------------------------------------------------------------------
 
 function init(){
     console.log(`
