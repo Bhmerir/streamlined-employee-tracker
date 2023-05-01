@@ -27,6 +27,7 @@ function askQuestion() {
                 "update an employee's manager",
                 "delete an employee",
                 "delete a role",
+                "delete a department",
                 "view all departments",
                 "view all roles",
                 "view all employees",
@@ -67,6 +68,9 @@ function askQuestion() {
                     break;
                 case "delete a role":
                     deleteARole();
+                    break;
+                case "delete a department":
+                    deleteADepartment();
                     break;
                 case "view the total utilized budget for each department":
                     viewBugetPerDepartment();
@@ -438,13 +442,20 @@ function viewBudgetOfADepartment(){
                                   FROM department,
                                   (SELECT role.department_id , sum(role.salary) AS budget
                                     FROM employee AS employee
-                                    INNER JOIN role ON employee.role_id = role.id
+                                    RIGHT JOIN role ON employee.role_id = role.id
                                     where role.department_id = ?) AS budget_per_department
                                    where budget_per_department.department_id = department.id`;
                 db.promise().query(queryTxt, [departmentId])
                     .then(([rows, fields]) =>{
                         console.log("\n");
-                        console.table(`budget of ${departmentName} department`,rows);
+                        /*In case that no employee works in the chosen department, the budget will be shown 0, otherwise the budget of that department
+                        which is the sum of the salaries of the employees who work there will be shown.*/
+                        if(rows.length !== 0){
+                            console.table(`budget of ${departmentName} department`,rows);
+                        }
+                        else{
+                            console.log(`The budget of the "${departmentName}" department is "0".`);
+                        }
                         askQuestion();
                     })
                     .catch(err=>{
@@ -584,7 +595,7 @@ function deleteAnEmployee(){
                     };
                     db.promise().query(`DELETE FROM employee where id = ?`, [employeeId])
                         .then(([rows, fields]) =>{
-                            console.log(`\n* "${employeeName}" is deleted from the list of the employees.`);
+                            console.log(`\n* "${employeeName}" was deleted from the list of the employees.`);
                             showAllEmployees();
                         })
                         .catch(err=>{
@@ -628,8 +639,51 @@ function deleteARole(){
                     };
                     db.promise().query(`DELETE FROM role where id = ?`, [roleId])
                         .then(([rows, fields]) =>{
-                            console.log(`\n* "${roleTitle}" is deleted from the list of the rols.`);
+                            console.log(`\n* The role of "${roleTitle}" was deleted.`);
                             showAllRoles();
+                        })
+                        .catch(err=>{
+                            console.log(err);
+                        })
+                    })    
+                    .catch((error) => {
+                        console.log(error);
+                        console.log("Sorry! Something went wrong!")
+                    })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+}
+//------------------------------------------------ Delete a Department --------------------------------------------------------
+function deleteADepartment(){
+    let department;
+    let departmentNameArr;
+    let departmentQuestion = [];
+    db.promise().query(`SELECT * FROM department`)
+        .then(([departmentRows, departmentFields]) =>{
+            department = departmentRows;
+            departmentNameArr = department.map(item => item.name);
+            departmentQuestion = [{
+                type: "list",
+                message: "Which department do you want to delete? (WARNING! If some roles is assigned to the chosen department, a new department should be set for them.) ",
+                name: "departmentName",
+                choices: departmentNameArr
+            }]
+            inquirer
+                .prompt(departmentQuestion)
+                .then((answer) => {
+                    let  {departmentName}= answer;
+                    let departmentId; 
+                    for(let i=0; i<department.length; i++){
+                        if (department[i].name == departmentName){     
+                            departmentId = department[i].id;    
+                        }
+                    };
+                    db.promise().query(`DELETE FROM department where id = ?`, [departmentId])
+                        .then(([rows, fields]) =>{
+                            console.log(`\n* The department of "${departmentName}" was deleted.`);
+                            showAllDepartments();
                         })
                         .catch(err=>{
                             console.log(err);

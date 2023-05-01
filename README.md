@@ -23,15 +23,19 @@ The user by applying the program, can do the following:
 
 6. delete an employee
 
-7. view all departments
+7. delete a role
 
-8. view all roles and the department to which each one of them belongs
+8. delete a department
 
-9. view all employees, their role titles, and their managers
+9. view all departments
 
-10. view the total utilized budget for each department
+10. view all roles and the department to which each one of them belongs
 
-11. view the total utilized budget of a specific department
+11. view all employees, their role titles, and their managers
+
+12. view the total utilized budget for each department
+
+13. view the total utilized budget of a specific department
 
 <br>
 
