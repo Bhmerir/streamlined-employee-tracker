@@ -23,9 +23,10 @@ function askQuestion() {
                 "view all departments",
                 "view all roles",
                 "view all employees",
+                "view employees by manager",
+                "view employees by department",
                 "view the total utilized budget for each department",
                 "view the total utilized budget of a specific department",
-                "view employees by manager",
                 "add a department",
                 "add a role",
                 "add an employee",
@@ -81,7 +82,10 @@ function askQuestion() {
                     break; 
                 case "view employees by manager":
                     viewEmployeesByManager();
-                    break;                  
+                    break;
+                case "view employees by department":
+                    viewEmployeesByDepartment();
+                    break;                     
                 case "quit":
                     db.end();
             }
@@ -741,6 +745,66 @@ function viewEmployeesByManager(){
                     .then(([rows, fields]) =>{
                         console.log("\n");
                         console.table(`The employees under supervision of "${managerName}"`,rows);
+                        askQuestion();
+                    })
+                    .catch(err=>{
+                        console.log(err);
+                    })
+            })
+            .catch((error) => {
+                console.log(error);
+                console.log("Sorry! Something went wrong!")
+            })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
+}
+//--------------------------------- View employees of a Specific Department -----------------------------------
+function viewEmployeesByDepartment(){
+    let department;
+    let departmentNameArr;
+    let budgetQuestion = [];
+    db.promise().query(`SELECT * FROM department`)
+        .then(([rows, fields]) =>{
+            department = rows;
+            departmentNameArr = department.map(item => item.name);
+            budgetQuestion = [{
+                type: "list",
+                message: "Choose A Department: ",
+                name: "departmentName",
+                choices: departmentNameArr
+            }]
+            
+            inquirer
+            .prompt(budgetQuestion)
+            .then((answer) => {
+                let  {departmentName}= answer;
+                let departmentId 
+                for(let i=0; i<department.length; i++){
+                    if (department[i].name == departmentName){
+                        departmentId = department[i].id;
+                    }
+                };
+                const queryTxt = `SELECT employees_per_department.employee_name, employees_per_department.title
+                                  FROM department,
+                                  (SELECT role.department_id , role.title, concat(employee.first_name, ' ', employee.last_name) AS employee_name
+                                    FROM employee AS employee
+                                    LEFT JOIN role ON employee.role_id = role.id
+                                    WHERE role.department_id = ?) AS employees_per_department
+                                  WHERE employees_per_department.department_id = department.id`;
+                db.promise().query(queryTxt, [departmentId])
+                    .then(([rows, fields]) =>{
+                        console.log("\n");
+                        /*In case that no employee works in the chosen department, a message will be shown, 
+                        otherwise the employees who work there will be shown.*/
+                        if(rows.length !== 0){
+                            console.table(`employees who work in ${departmentName} department`,rows);
+                        }
+                        else{
+                            console.log(`No employee works in "${departmentName}" department.`);
+                        }
                         askQuestion();
                     })
                     .catch(err=>{
