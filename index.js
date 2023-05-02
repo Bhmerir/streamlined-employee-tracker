@@ -20,6 +20,12 @@ function askQuestion() {
             message: "What would you like to do? (select 'quit' to stop the application) ",
             name: "selectedQuery",
             choices: [
+                "view all departments",
+                "view all roles",
+                "view all employees",
+                "view the total utilized budget for each department",
+                "view the total utilized budget of a specific department",
+                "view employees by manager",
                 "add a department",
                 "add a role",
                 "add an employee",
@@ -27,12 +33,7 @@ function askQuestion() {
                 "update an employee's manager",
                 "delete an employee",
                 "delete a role",
-                "delete a department",
-                "view all departments",
-                "view all roles",
-                "view all employees",
-                "view the total utilized budget for each department",
-                "view the total utilized budget of a specific department",
+                "delete a department",   
                 "quit",
             ]    
         })
@@ -77,7 +78,10 @@ function askQuestion() {
                     break; 
                 case "view the total utilized budget of a specific department":
                     viewBudgetOfADepartment();
-                    break;                   
+                    break; 
+                case "view employees by manager":
+                    viewEmployeesByManager();
+                    break;                  
                 case "quit":
                     db.end();
             }
@@ -414,7 +418,7 @@ function viewBugetPerDepartment(){
 }
 //--------------------------------- View the Budget of a Specific Department -----------------------------------
 function viewBudgetOfADepartment(){
-    let manager;
+    let department;
     let departmentNameArr;
     let budgetQuestion = [];
     db.promise().query(`SELECT * FROM department`)
@@ -698,7 +702,61 @@ function deleteADepartment(){
             console.log(err);
         })
 }
-
+//------------------------------------------- view employees by manager -----------------------------------------------------------
+function viewEmployeesByManager(){
+    let manager;
+    let managerNameArr;
+    let managerQuestion = [];
+    //This select query brings only the name of managers
+    db.promise().query(`SELECT DISTINCT employee.manager_id, concat(manager.first_name, ' ', manager.last_name) AS manager_name FROM employee
+                        INNER JOIN employee AS manager
+                        ON manager.id = employee.manager_id`)
+        .then(([rows, fields]) =>{
+            manager = rows;
+            managerNameArr = manager.map(item => item.manager_name);
+            managerQuestion = [{
+                type: "list",
+                message: "Choose A manager: ",
+                name: "managerName",
+                choices: managerNameArr
+            }]
+            
+            inquirer
+            .prompt(managerQuestion)
+            .then((answer) => {
+                let  {managerName}= answer;
+                let managerId 
+                for(let i=0; i<manager.length; i++){
+                    if (manager[i].manager_name == managerName){
+                        managerId = manager[i].manager_id;
+                    }
+                };
+                console.log(managerId)
+                const queryTxt = `SELECT concat(employee.first_name, ' ', employee.last_name) AS employee_name, role.title 
+                                  FROM employee
+                                  LEFT JOIN role
+                                  ON role.id = employee.role_id
+                                  WHERE employee.manager_id = ?;`;
+                db.promise().query(queryTxt, [managerId])
+                    .then(([rows, fields]) =>{
+                        console.log("\n");
+                        console.table(`The employees under supervision of "${managerName}"`,rows);
+                        askQuestion();
+                    })
+                    .catch(err=>{
+                        console.log(err);
+                    })
+            })
+            .catch((error) => {
+                console.log(error);
+                console.log("Sorry! Something went wrong!")
+            })
+        })
+        .catch(err=>{
+            console.log(err);
+        })
+    
+}
 
 //-------------------------------------------------------- Init --------------------------------------------------------------------------
 

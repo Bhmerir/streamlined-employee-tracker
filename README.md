@@ -66,7 +66,7 @@ In order to install this application, clone the repository and write the below c
 
 `npm i`
 
-Then, execute the `'schema.sql'` file which is inside of the `'db'` folder, in your mySql environment. This file is resposible to create the database and the related tables. In case you are interested to see some example data in each table, you can execute the file of `'seeds.sql'` too. Otherwise you can use the program to add your desired data.
+Then, execute the `'schema.sql'` file which is inside of the `'db'` folder, in your mySql environment. This file is resposible to create the database and the related tables. In case you are interested to see some sample data in each table, you can execute the file of `'seeds.sql'` too. Otherwise you can use the program to add your desired data.
 
 <br>
 
