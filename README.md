@@ -48,6 +48,8 @@ The user by applying the program, can do the following:
 
 * [Description](#description)
 
+* [Mock Up](#mock-up)
+
 * [Installation](#installation)
 
 * [Usage](#usage)
@@ -59,6 +61,20 @@ The user by applying the program, can do the following:
 * [Credit](#credit)
 
 * [License](#license)
+
+<br>
+
+## Mock Up
+
+---
+
+### `Employee Tracker`
+
+![employee tracker image](./images/employee-tracker.png)
+
+### `View ALL Employees Query (As an example)`
+
+![view all employees image](./images/view-all-employees.png)
 
 <br>
 
