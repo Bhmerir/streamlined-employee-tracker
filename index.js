@@ -450,9 +450,9 @@ function viewBudgetOfADepartment(){
                                   FROM department,
                                   (SELECT role.department_id , sum(role.salary) AS budget
                                     FROM employee AS employee
-                                    RIGHT JOIN role ON employee.role_id = role.id
-                                    where role.department_id = ?) AS budget_per_department
-                                   where budget_per_department.department_id = department.id`;
+                                    LEFT JOIN role ON employee.role_id = role.id
+                                    WHERE role.department_id = ?) AS budget_per_department
+                                   WHERE budget_per_department.department_id = department.id`;
                 db.promise().query(queryTxt, [departmentId])
                     .then(([rows, fields]) =>{
                         console.log("\n");

@@ -33,9 +33,13 @@ The user by applying the program, can do the following:
 
 11. view all employees, their role titles, and their managers
 
-12. view the total utilized budget for each department
+12. view the employees who are supervised by a specific manager
 
-13. view the total utilized budget of a specific department
+13. view the employees who work in a specific department
+
+14. view the total utilized budget for each department
+
+15. view the total utilized budget of a specific department
 
 <br>
 
@@ -80,7 +84,7 @@ To run the program, enter the below command in console, and then follow the inst
 
 This is a link to a video which instructs the users on how to work with software : 
 
-[Walk-through Video Link](https://drive.google.com/)
+[Walk-through Video Link](https://drive.google.com/file/d/1-jmFEGZe8VjnfXdoRTlYDYdbVAF5dWb6/view)
 
 <br>
 
